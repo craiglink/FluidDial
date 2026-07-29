@@ -112,11 +112,11 @@ private:
 #else
     static const int DEFAULT_DIST_INDEX = 1;  // tenths
 #endif
-    int          _dist_index[3] = { DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX };
+    int          _dist_index[6] = { DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX };
     int          max_index() { return 6; }  // 10^3 = 1000;
     int          min_index() { return 0; }  // 10^3 = 1000;
     int          _selected_mask = 1 << 0;
-    const int    num_axes       = 3;
+    int          num_axes() { return (n_axes > 0 && n_axes <= 6) ? n_axes : 3; }
     bool         _cancelling    = false;
     bool         _cancel_held   = false;
     bool         _continuous    = false;
@@ -181,7 +181,7 @@ public:
     bool selected(int axis) { return _selected_mask & (1 << axis); }
     bool only(int axis) { return _selected_mask == (1 << axis); }
 
-    int  next(int axis) { return (axis < 2) ? axis + 1 : 0; }
+    int  next(int axis) { return (axis < num_axes() - 1) ? axis + 1 : 0; }
     void select(int axis) { _selected_mask |= 1 << axis; }
     void unselect(int axis) { _selected_mask &= ~(1 << axis); }
 
@@ -189,7 +189,7 @@ public:
         if ((_selected_mask & (_selected_mask - 1)) != 0) {
             return -2;  // Multiple axes are selected
         }
-        for (size_t axis = 0; axis < num_axes; axis++) {
+        for (size_t axis = 0; axis < num_axes(); axis++) {
             if (selected(axis)) {
                 return axis;
             }
@@ -260,7 +260,7 @@ public:
         drawJogBg();
         drawMenuTitle("Jog");
         if (state == Idle) {
-            centered_text(_dynamic_mode ? "Dynamic" : "Precise", 45, 65535, SMALL);
+            centered_text(_dynamic_mode ? "Dynamic" : "Precise", 36, 65535, TINY);
         } else {
             drawStatus();
         }
@@ -271,8 +271,13 @@ public:
         if (_cancelling || _cancel_held) {
             centered_text("Jog Canceled", 120, RED, MEDIUM);
         } else {
-            DRO dro(16, 68, 210, 32);
-            for (size_t axis = 0; axis < num_axes; axis++) {
+            int n          = num_axes();
+            int dro_height = (n <= 3) ? 32 : (n == 4 ? 25 : 18);
+            int dro_gap    = (n <= 3) ? 33 : (dro_height + 5);
+            int start_y    = (n <= 3) ? 68 : (n == 4 ? 58 : 50);
+            fontnum_t font = (n <= 3) ? MEDIUM_MONO : (n == 4 ? MEDIUM : SMALL);
+            DRO dro(16, start_y, 210, dro_height, font, dro_gap);
+            for (size_t axis = 0; axis < n; axis++) {
                 dro.draw(axis, _dist_index[axis], selected(axis));
             }
             if (state == Jog) {
@@ -281,7 +286,7 @@ public:
                 }
             } else {
                 std::string dialLegend("Zero");
-                for (int axis = 0; axis < num_axes; axis++) {
+                for (int axis = 0; axis < num_axes(); axis++) {
                     if (selected(axis)) {
                         dialLegend += axisNumToChar(axis);
                     }
@@ -293,7 +298,7 @@ public:
     }
     void zero_axes() {
         std::string cmd = "G10L20P0";
-        for (int axis = 0; axis < num_axes; axis++) {
+        for (int axis = 0; axis < num_axes(); axis++) {
             if (selected(axis)) {
                 cmd += axisNumToChar(axis);
                 cmd += "0";
@@ -323,7 +328,7 @@ public:
     void confirm_zero_axes() {
         std::string confirmMsg("Zero ");
 
-        for (int axis = 0; axis < num_axes; axis++) {
+        for (int axis = 0; axis < num_axes(); axis++) {
             if (selected(axis)) {
                 confirmMsg += axisNumToChar(axis);
             }
@@ -343,7 +348,7 @@ public:
         }
     }
     void increment_distance() {
-        for (int axis = 0; axis < num_axes; axis++) {
+        for (int axis = 0; axis < num_axes(); axis++) {
             if (selected(axis)) {
                 increment_distance(axis);
             }
@@ -356,14 +361,14 @@ public:
     }
 
     void decrement_distance() {
-        for (int axis = 0; axis < num_axes; axis++) {
+        for (int axis = 0; axis < num_axes(); axis++) {
             if (selected(axis)) {
                 decrement_distance(axis);
             }
         }
     }
     void rotate_distance() {
-        for (int axis = 0; axis < num_axes; axis++) {
+        for (int axis = 0; axis < num_axes(); axis++) {
             if (selected(axis)) {
                 if (++_dist_index[axis] >= max_index()) {
                     _dist_index[axis] = min_index();
@@ -392,15 +397,15 @@ public:
         int the_axis = the_selected_axis();
         if (the_axis == -2) {
             unselect_all();
-            select(num_axes - 1);
+            select(num_axes() - 1);
             return;
         }
         if (the_axis == -1) {
-            select(num_axes - 1);
+            select(num_axes() - 1);
             return;
         }
         unselect(the_axis);
-        if (++the_axis == num_axes) {
+        if (++the_axis == num_axes()) {
             the_axis = 0;
         }
         select(the_axis);
@@ -418,7 +423,7 @@ public:
         }
         unselect(the_axis);
         if (--the_axis < 0) {
-            the_axis = num_axes - 1;
+            the_axis = num_axes() - 1;
         }
         select(the_axis);
     }
@@ -513,7 +518,7 @@ public:
 
     e4_t mpg_move_distance(int delta) {
         e4_t move = 0;
-        for (int axis = 0; axis < num_axes; ++axis) {
+        for (int axis = 0; axis < num_axes(); ++axis) {
             if (selected(axis)) {
                 move = e4_magnitude(move, delta * distance(axis));
             }
@@ -526,7 +531,7 @@ public:
         cmd += inInches ? "G20" : "G21";
         cmd += "F";
         cmd += e4_to_cstr(feed, 0);
-        for (int axis = 0; axis < num_axes; ++axis) {
+        for (int axis = 0; axis < num_axes(); ++axis) {
             if (selected(axis)) {
                 cmd += axisNumToChar(axis);
                 cmd += e4_to_cstr(delta * distance(axis), inInches ? 3 : 2);
@@ -539,7 +544,7 @@ public:
         // e.g. $J=G91F1000X-10000
         e4_t total_distance = 0;
         int  n_axes         = 0;
-        for (int axis = 0; axis < num_axes; ++axis) {
+        for (int axis = 0; axis < num_axes(); ++axis) {
             if (selected(axis)) {
                 total_distance = e4_magnitude(total_distance, distance(axis));
                 ++n_axes;
@@ -552,7 +557,7 @@ public:
         cmd += inInches ? "G20" : "G21";
         cmd += "F";
         cmd += e4_to_cstr(feedrate, 3);
-        for (int axis = 0; axis < num_axes; ++axis) {
+        for (int axis = 0; axis < num_axes(); ++axis) {
             if (selected(axis)) {
                 e4_t axis_distance;
                 if (n_axes == 1) {
@@ -716,7 +721,7 @@ public:
         if (!_dynamic_mode) {
             return false;
         }
-        for (int axis = 0; axis < num_axes; axis++) {
+        for (int axis = 0; axis < num_axes(); axis++) {
             if (selected(axis) && _dist_index[axis] >= num_digits()) {
                 return true;
             }

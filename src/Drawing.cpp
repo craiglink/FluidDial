@@ -225,7 +225,8 @@ void drawStatusSmall(int y) {
     centered_text(my_state_string, y + height / 2 + 3, stateFGColors[state], SMALL);
 }
 
-Stripe::Stripe(int x, int y, int width, int height, fontnum_t font) : _x(x), _y(y), _width(width), _height(height), _font(font) {}
+Stripe::Stripe(int x, int y, int width, int height, fontnum_t font, int gap)
+    : _x(x), _y(y), _width(width), _height(height), _gap(gap), _font(font) {}
 
 void Stripe::draw(char left, const char* right, bool highlighted, int left_color) {
     char t[2] = { left, '\0' };
@@ -261,14 +262,13 @@ void drawButtonLegends(const char* red, const char* green, const char* orange) {
     centered_text(orange, DIAL_BUTTON_LINE, ORANGE);
 }
 
-void putDigit(int& n, int x, int y, int color) {
+void putDigit(int& n, int x, int y, int color, fontnum_t font = MEDIUM) {
     char txt[2] = { '\0', '\0' };
     txt[0]      = "0123456789"[n % 10];
     n /= 10;
-    text(txt, x, y, color, MEDIUM, middle_right);
+    text(txt, x, y, color, font, middle_right);
 }
-void fancyNumber(pos_t n, int n_decimals, int hl_digit, int x, int y, int text_color, int hl_text_color) {
-    fontnum_t font     = SMALL;
+void fancyNumber(pos_t n, int n_decimals, int hl_digit, int x, int y, int text_color, int hl_text_color, fontnum_t font = SMALL) {
     int       n_digits = n_decimals + 1;
     int       i;
     bool      isneg = n < 0;
@@ -276,12 +276,6 @@ void fancyNumber(pos_t n, int n_decimals, int hl_digit, int x, int y, int text_c
         n = -n;
     }
 #ifdef E4_POS_T
-    // in e4 format, the number always has 4 postdecimal digits,
-    // so if n_decimals is less than 4, we discard digits from
-    // the right.  We could do this by computing a divisor
-    // based on e4_power10(4 - n_decimals), but the expected
-    // number of iterations of this loop is max 4, typically 2,
-    // so that is hardly worthwhile.
     for (i = 4; i > n_decimals; --i) {
         if (i == (n_decimals + 1)) {  // Round
             n += 5;
@@ -293,36 +287,36 @@ void fancyNumber(pos_t n, int n_decimals, int hl_digit, int x, int y, int text_c
         n *= 10;
     }
 #endif
-    const int char_width = 20;
+    const int char_width = (font == TINY ? 10 : (font == SMALL ? 14 : 20));
 
     int ni = (int)n;
     for (i = 0; i < n_decimals; i++) {
-        putDigit(ni, x, y, i == hl_digit ? hl_text_color : text_color);
+        putDigit(ni, x, y, i == hl_digit ? hl_text_color : text_color, font);
         x -= char_width;
     }
     if (n_decimals) {
-        text(".", x - 10, y, text_color, MEDIUM, middle_center);
+        text(".", x - (font == TINY ? 5 : 8), y, text_color, font, middle_center);
         x -= char_width;
     }
     do {
-        putDigit(ni, x, y, i++ == hl_digit ? hl_text_color : text_color);
+        putDigit(ni, x, y, i++ == hl_digit ? hl_text_color : text_color, font);
         x -= char_width;
     } while (ni || i <= hl_digit);
     if (isneg) {
-        text("-", x, y, text_color, MEDIUM, middle_right);
+        text("-", x, y, text_color, font, middle_right);
     }
 }
 
 void DRO::drawHoming(int axis, bool highlight, bool homed) {
-    text(axisNumToCStr(axis), text_left_x(), text_middle_y(), myLimitSwitches[axis] ? GREEN : YELLOW, MEDIUM, middle_left);
-    fancyNumber(myAxes[axis], num_digits(), -1, text_right_x(), text_middle_y(), highlight ? (homed ? GREEN : RED) : DARKGREY, RED);
+    text(axisNumToCStr(axis), text_left_x(), text_middle_y(), myLimitSwitches[axis] ? GREEN : YELLOW, _font, middle_left);
+    fancyNumber(myAxes[axis], num_digits(), -1, text_right_x(), text_middle_y(), highlight ? (homed ? GREEN : RED) : DARKGREY, RED, _font);
     advance();
 }
 
 void DRO::draw(int axis, int hl_digit, bool highlight) {
-    text(axisNumToCStr(axis), text_left_x(), text_middle_y(), highlight ? GREEN : DARKGREY, MEDIUM, middle_left);
+    text(axisNumToCStr(axis), text_left_x(), text_middle_y(), highlight ? GREEN : DARKGREY, _font, middle_left);
     fancyNumber(
-        myAxes[axis], num_digits(), hl_digit, text_right_x(), text_middle_y(), highlight ? WHITE : DARKGREY, highlight ? RED : DARKGREY);
+        myAxes[axis], num_digits(), hl_digit, text_right_x(), text_middle_y(), highlight ? WHITE : DARKGREY, highlight ? RED : DARKGREY, _font);
     advance();
 }
 

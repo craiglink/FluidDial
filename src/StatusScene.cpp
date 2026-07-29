@@ -151,10 +151,15 @@ public:
         drawMenuTitle(current_scene->name());
         drawStatus();
 
-        DRO dro(16, 68, 210, 32);
-        dro.draw(0, -1, true);
-        dro.draw(1, -1, true);
-        dro.draw(2, -1, true);
+        int active_axes = (n_axes > 0 && n_axes <= 6) ? n_axes : 3;
+        int dro_height  = (active_axes <= 3) ? 32 : (active_axes == 4 ? 25 : 18);
+        int dro_gap     = (active_axes <= 3) ? 33 : (dro_height + 5);
+        int start_y     = (active_axes <= 3) ? 68 : (active_axes == 4 ? 58 : 50);
+        fontnum_t font  = (active_axes <= 3) ? MEDIUM_MONO : (active_axes == 4 ? MEDIUM : SMALL);
+        DRO dro(16, start_y, 210, dro_height, font, dro_gap);
+        for (int i = 0; i < active_axes; ++i) {
+            dro.draw(i, -1, true);
+        }
 
         int y = 170;
         if (state == Cycle || state == Hold) {
