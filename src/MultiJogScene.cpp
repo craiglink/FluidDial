@@ -113,7 +113,7 @@ private:
     static const int DEFAULT_DIST_INDEX = 1;  // tenths
 #endif
     int          _dist_index[6] = { DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX, DEFAULT_DIST_INDEX };
-    int          max_index() { return 6; }  // 10^3 = 1000;
+    int          max_index() { return 5; }  // 10^3 = 1000;
     int          min_index() { return 0; }  // 10^3 = 1000;
     int          _selected_mask = 1 << 0;
     int          num_axes() { return (n_axes > 0 && n_axes <= 6) ? n_axes : 3; }
@@ -275,7 +275,7 @@ public:
             int dro_height = (n <= 3) ? 32 : (n == 4 ? 25 : 18);
             int dro_gap    = (n <= 3) ? 33 : (dro_height + 5);
             int start_y    = (n <= 3) ? 68 : (n == 4 ? 58 : 50);
-            fontnum_t font = (n <= 3) ? MEDIUM_MONO : (n == 4 ? MEDIUM : SMALL);
+            fontnum_t font = (n <= 4) ? MEDIUM : SMALL;
             DRO dro(16, start_y, 210, dro_height, font, dro_gap);
             for (size_t axis = 0; axis < n; axis++) {
                 dro.draw(axis, _dist_index[axis], selected(axis));
@@ -311,18 +311,11 @@ public:
             zero_axes();
         }
         if (initPrefs()) {
-            for (size_t axis = 0; axis < 3; axis++) {
+            for (size_t axis = 0; axis < num_axes(); axis++) {
                 getPref("DistanceDigit", axis, &_dist_index[axis]);
             }
             getPref("JogMode", &_dynamic_mode);
         }
-    }
-
-    int which(int x, int y) {
-        if (y > 130) {
-            return 2;
-        }
-        return y > 90 ? 1 : 0;
     }
 
     void confirm_zero_axes() {
@@ -370,7 +363,7 @@ public:
     void rotate_distance() {
         for (int axis = 0; axis < num_axes(); axis++) {
             if (selected(axis)) {
-                if (++_dist_index[axis] >= max_index()) {
+                if (++_dist_index[axis] > max_index()) {
                     _dist_index[axis] = min_index();
                 }
             }
@@ -492,7 +485,18 @@ public:
     void onTouchHold() {
         // Select multiple axes
         if (touchX < 80) {
-            int axis = which(touchX, touchY);
+            int n          = num_axes();
+            int dro_height = (n <= 3) ? 32 : (n == 4 ? 25 : 18);
+            int dro_gap    = (n <= 3) ? 33 : (dro_height + 5);
+            int start_y    = (n <= 3) ? 68 : (n == 4 ? 58 : 50);
+            int row_offset = touchY - start_y;
+            if (row_offset < 0) {
+                return;
+            }
+            int axis = row_offset / dro_gap;
+            if (axis >= n || row_offset % dro_gap >= dro_height) {
+                return;
+            }
             if (selected(axis) && !only(axis)) {
                 unselect(axis);
             } else {

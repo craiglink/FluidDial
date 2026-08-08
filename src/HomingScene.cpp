@@ -138,13 +138,13 @@ public:
         std::string green       = "Home ";
 
         if (false && state == Homing) {
-            DRO dro(16, 68, 210, 32);
+            DRO dro(16, 68, 210, 32, MEDIUM);
             for (size_t axis = 0; axis < HOMING_N_AXIS; axis++) {
                 dro.draw(axis, -1, true);
             }
 
         } else if (state == Idle || state == Homing || state == Alarm) {
-            DRO dro(16, 68, 210, 32);
+            DRO dro(16, 68, 210, 32, MEDIUM);
             for (int axis = 0; axis < HOMING_N_AXIS; ++axis) {
                 dro.drawHoming(axis, is_homing(axis), is_homed(axis));
             }

@@ -226,7 +226,7 @@ void drawStatusSmall(int y) {
 }
 
 Stripe::Stripe(int x, int y, int width, int height, fontnum_t font, int gap)
-    : _x(x), _y(y), _width(width), _height(height), _gap(gap), _font(font) {}
+    : _x(x), _width(width), _height(height), _gap(gap), _y(y), _font(font) {}
 
 void Stripe::draw(char left, const char* right, bool highlighted, int left_color) {
     char t[2] = { left, '\0' };
@@ -295,7 +295,7 @@ void fancyNumber(pos_t n, int n_decimals, int hl_digit, int x, int y, int text_c
         x -= char_width;
     }
     if (n_decimals) {
-        text(".", x - (font == TINY ? 5 : 8), y, text_color, font, middle_center);
+        text(".", x - char_width / 2, y, text_color, font, middle_center);
         x -= char_width;
     }
     do {
