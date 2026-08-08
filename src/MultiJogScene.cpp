@@ -275,7 +275,7 @@ public:
             int dro_height = (n <= 3) ? 32 : (n == 4 ? 25 : 18);
             int dro_gap    = (n <= 3) ? 33 : (dro_height + 5);
             int start_y    = (n <= 3) ? 68 : (n == 4 ? 58 : 50);
-            fontnum_t font = (n <= 3) ? MEDIUM_MONO : (n == 4 ? MEDIUM : SMALL);
+            fontnum_t font = (n <= 4) ? MEDIUM : SMALL;
             DRO dro(16, start_y, 210, dro_height, font, dro_gap);
             for (size_t axis = 0; axis < n; axis++) {
                 dro.draw(axis, _dist_index[axis], selected(axis));
@@ -489,8 +489,14 @@ public:
             int dro_height = (n <= 3) ? 32 : (n == 4 ? 25 : 18);
             int dro_gap    = (n <= 3) ? 33 : (dro_height + 5);
             int start_y    = (n <= 3) ? 68 : (n == 4 ? 58 : 50);
-            int axis       = (touchY - start_y) / dro_gap;
-            axis           = axis < 0 ? 0 : (axis >= n ? n - 1 : axis);
+            int row_offset = touchY - start_y;
+            if (row_offset < 0) {
+                return;
+            }
+            int axis = row_offset / dro_gap;
+            if (axis >= n || row_offset % dro_gap >= dro_height) {
+                return;
+            }
             if (selected(axis) && !only(axis)) {
                 unselect(axis);
             } else {

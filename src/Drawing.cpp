@@ -295,7 +295,7 @@ void fancyNumber(pos_t n, int n_decimals, int hl_digit, int x, int y, int text_c
         x -= char_width;
     }
     if (n_decimals) {
-        text(".", x - (font == TINY ? 5 : 8), y, text_color, font, middle_center);
+        text(".", x - char_width / 2, y, text_color, font, middle_center);
         x -= char_width;
     }
     do {
