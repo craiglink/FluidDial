@@ -226,7 +226,7 @@ void drawStatusSmall(int y) {
 }
 
 Stripe::Stripe(int x, int y, int width, int height, fontnum_t font, int gap)
-    : _x(x), _y(y), _width(width), _height(height), _gap(gap), _font(font) {}
+    : _x(x), _width(width), _height(height), _gap(gap), _y(y), _font(font) {}
 
 void Stripe::draw(char left, const char* right, bool highlighted, int left_color) {
     char t[2] = { left, '\0' };
